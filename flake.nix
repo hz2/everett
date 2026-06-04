@@ -34,7 +34,9 @@
         # all production builds and checks.
         stableToolchain = fenixPkgs.fromToolchainFile {
           file = ./rust-toolchain.toml;
-          sha256 = pkgs.lib.fakeSha256; # replace with the real hash on first build
+          # one-time step: run `nix build` once, then copy the expected hash
+          # from the error message in place of fakeSha256.
+          sha256 = pkgs.lib.fakeSha256;
         };
         craneLib = (crane.mkLib pkgs).overrideToolchain stableToolchain;
 
