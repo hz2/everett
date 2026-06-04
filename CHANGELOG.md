@@ -17,3 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Born-rule measurement with mid-circuit classical control.
 - Worked algorithms: Bell, GHZ, teleportation, superdense coding, QFT, phase
   estimation, and Hamiltonian simulation.
+- `unsafe` fast path in the kernel, justified by Kani proofs of the index
+  arithmetic (bounds + injectivity) and validated for undefined behavior by Miri
+  under both the Stacked Borrows and Tree Borrows aliasing models.

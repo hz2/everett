@@ -2,7 +2,7 @@
 name = "everett"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.95"
+rust-version = "1.85"
 license = "MIT OR Apache-2.0"
 description = "A clean, zero-dependency statevector quantum simulator."
 repository = "https://github.com/jdevers/everett"
@@ -33,6 +33,9 @@ harness = false
 [lints.rust]
 unsafe_op_in_unsafe_fn = "warn"
 missing_docs = "warn"
+# `kani` is set only when building under the Kani verifier; declare it so the
+# `#[cfg(kani)]` proof module does not trip the unexpected-cfg lint.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
