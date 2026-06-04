@@ -14,30 +14,37 @@ jobs:
     name: nix flake check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: DeterminateSystems/nix-installer-action@v16
-      - uses: DeterminateSystems/magic-nix-cache-action@v8
+      # GitHub-Actions-backed nix store cache; needs no external service or auth.
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock', '**/Cargo.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
       - run: nix flake check --all-systems
 
   miri:
     name: miri
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: install miri
+        # each rustup component needs its own --component flag. the nightly
+        # toolchain is selected per-command with `+nightly` below, which takes
+        # precedence over the repo's rust-toolchain.toml (pinned to stable).
         run: |
-          rustup toolchain install nightly --component miri rust-src
-          rustup override set nightly
-          cargo miri setup
+          rustup toolchain install nightly --component miri --component rust-src
+          cargo +nightly miri setup
       - name: cargo miri test
         run: |
-          MIRIFLAGS="-Zmiri-strict-provenance -Zmiri-tree-borrows" cargo miri test miri_
+          MIRIFLAGS="-Zmiri-strict-provenance -Zmiri-tree-borrows" \
+            cargo +nightly miri test miri_
 
   kani:
     name: kani
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: model-checking/kani-github-action@v1
 
   coverage:
@@ -45,9 +52,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: check
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: DeterminateSystems/nix-installer-action@v16
-      - uses: DeterminateSystems/magic-nix-cache-action@v8
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock', '**/Cargo.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
       - name: cargo llvm-cov
         run: nix develop --command cargo llvm-cov --all-features --lcov --output-path lcov.info
       - uses: codecov/codecov-action@v5

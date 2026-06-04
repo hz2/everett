@@ -4,8 +4,8 @@
 //! representation. The default and only v1 backend is [`StateVectorBackend`],
 //! which evolves a dense [`crate::state::State`]. The trait exists so the
 //! circuit front end stays independent of how a circuit is simulated, and so
-//! the shared op-walking logic ([`drive`]) — including measurement and
-//! classical control — is written once.
+//! the shared op-walking logic (the internal `drive` function) — including
+//! measurement and classical control — is written once.
 //!
 //! TODO: a stabilizer/Clifford backend that simulates Clifford circuits in
 //! polynomial time would slot in behind this same trait without touching the
@@ -21,9 +21,9 @@ use crate::op::Op;
 
 /// A target that gates can be applied to and qubits measured from.
 ///
-/// Implementors handle only the primitive operations; the [`drive`] function
-/// layers circuit traversal, classical registers, and conditional execution on
-/// top, so a new backend needs to define just these four methods.
+/// Implementors handle only the primitive operations; an internal driver layers
+/// circuit traversal, classical registers, and conditional execution on top, so
+/// a new backend needs to define just these four methods.
 pub trait Backend {
     /// Applies a single-qubit gate to qubit `target`.
     fn apply_1q(&mut self, gate: &Gate1, target: usize);

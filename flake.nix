@@ -34,9 +34,9 @@
         # all production builds and checks.
         stableToolchain = fenixPkgs.fromToolchainFile {
           file = ./rust-toolchain.toml;
-          # one-time step: run `nix build` once, then copy the expected hash
-          # from the error message in place of fakeSha256.
-          sha256 = pkgs.lib.fakeSha256;
+          # hash of the pinned toolchain from rust-toolchain.toml. if the pin
+          # changes, `nix build` prints the new expected hash to paste here.
+          sha256 = "sha256-gh/xTkxKHL4eiRXzWv8KP7vfjSk61Iq48x47BEDFgfk=";
         };
         craneLib = (crane.mkLib pkgs).overrideToolchain stableToolchain;
 
@@ -47,9 +47,7 @@
         };
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
-        everett = craneLib.buildPackage (
-          commonArgs // { inherit cargoArtifacts; }
-        );
+        everett = craneLib.buildPackage (commonArgs // { inherit cargoArtifacts; });
 
         # nightly toolchain carrying miri + rust-src (cargo-miri builds its own
         # sysroot from rust-src). lives only in the `.#miri` devShell, separate

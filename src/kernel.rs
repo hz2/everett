@@ -22,8 +22,9 @@
 //! make room for the inserted `0`. This makes `i -> i0` a bijection from
 //! `0..2^(n-1)` onto the bit-`k`-clear indices, so across the loop every
 //! amplitude is touched exactly once. Those bounds and the bijection are what
-//! the Kani proofs in [`proofs`] establish, which is what justifies the
-//! `get_unchecked` accesses in the apply functions below.
+//! the Kani proofs in the `proofs` module (built only under `cfg(kani)`)
+//! establish, which is what justifies the `get_unchecked` accesses in the apply
+//! functions below.
 
 use crate::complex::Complex64;
 use crate::gate::{Gate1, Gate2};
