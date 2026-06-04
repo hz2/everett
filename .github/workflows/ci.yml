@@ -62,6 +62,11 @@ jobs:
           restore-prefixes-first-match: nix-${{ runner.os }}-
       - name: cargo llvm-cov
         run: nix develop --command cargo llvm-cov --all-features --lcov --output-path lcov.info
+      # uploading is best-effort: a missing CODECOV_TOKEN (or codecov outage)
+      # should not fail the build, since coverage was still generated above.
       - uses: codecov/codecov-action@v5
+        continue-on-error: true
         with:
           files: lcov.info
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
