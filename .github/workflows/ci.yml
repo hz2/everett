@@ -21,7 +21,9 @@ jobs:
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock', '**/Cargo.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
-      - run: nix flake check --all-systems
+      # no --all-systems: the runner is x86_64-linux and cannot build the
+      # toolchain for other platforms (the fenix channel drv is per-system).
+      - run: nix flake check
 
   miri:
     name: miri
