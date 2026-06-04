@@ -1,0 +1,48 @@
+[package]
+name = "everett"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+license = "MIT OR Apache-2.0"
+description = "A clean, zero-dependency statevector quantum simulator."
+repository = "https://github.com/jdevers/everett"
+keywords = ["quantum", "simulator", "statevector", "qubit", "physics"]
+categories = ["science", "simulation"]
+readme = "README.md"
+
+[features]
+default = []
+# parallel gate application via rayon; off by default to keep the core dep-free
+# and Miri-friendly. enable with `--features parallel`.
+parallel = ["dep:rayon"]
+
+[dependencies]
+# zero runtime dependencies in the default build. rayon is the sole optional
+# dependency and only compiles in under the `parallel` feature.
+rayon = { version = "1", optional = true }
+
+[dev-dependencies]
+proptest = "1"
+approx = "0.5"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "gate_apply"
+harness = false
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# the simulator deals in 2^n indices and f64 amplitudes; these casts are
+# deliberate and checked at the boundaries, so the pedantic cast lints add
+# noise rather than signal here.
+cast_precision_loss = "allow"
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

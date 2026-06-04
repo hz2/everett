@@ -1,0 +1,7 @@
+/target
+Cargo.lock
+result
+result-*
+*.snap.new
+/coverage/
+.direnv/
