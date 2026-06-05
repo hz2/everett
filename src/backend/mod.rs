@@ -6,9 +6,11 @@
 //! stays independent of how a circuit is simulated, and so the shared op-walking
 //! logic — including measurement and classical control — is written once.
 
+mod density_matrix;
 mod stabilizer;
 mod statevector;
 
+pub use density_matrix::{DensityMatrixBackend, DensityMatrixExecution};
 pub use stabilizer::{PauliString, StabilizerBackend, StabilizerExecution};
 pub use statevector::{Execution, StateVectorBackend};
 

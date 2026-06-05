@@ -45,3 +45,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   backend (the statevector is a `+1` eigenstate of every reported stabilizer
   generator) over random Clifford circuits.
 - `PauliString` type with Pauli-operator expectation values.
+- `DensityMatrix` type: a `2^n x 2^n` complex matrix representing mixed states,
+  supporting unitary evolution (`rho -> U rho U†`), quantum channels (Kraus
+  operators, `rho -> sum_k K_k rho K_k†`), projective measurement with collapse
+  and renormalization, Pauli expectation values, and single-qubit partial trace.
+- `NoiseModel` and `Channel` types: built-in channels for depolarizing noise,
+  amplitude damping (T1), phase damping (T2), bit-flip, and dephasing, plus
+  custom Kraus operators. All satisfy the trace-preservation completeness
+  condition (`sum_k K_k† K_k = I`), validated by unit tests.
+- `DensityMatrixBackend`: implements the `Backend` trait, running circuits as
+  density matrices with per-gate and readout noise from a `NoiseModel`. Ideal
+  runs (no noise) reproduce statevector backend probabilities exactly. Cross-
+  validated against `StateVectorBackend` for all circuits up to n=4.
+
+### Planned (future work)
+
+- Python bindings via PyO3 (`pip install everett`): expose `Circuit`, `NoiseModel`,
+  and all backends with numpy amplitude arrays. Zero runtime-dep constraint is
+  preserved (PyO3 is a build dependency only).
+- OpenQASM 3.0 import/export: interoperability with Qiskit, Cirq, and IBM/Google
+  hardware — circuits designed in any standard toolchain can run on everett.

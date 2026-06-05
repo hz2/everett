@@ -114,7 +114,14 @@ active when `target >= 1` and no control qubit occupies bit position 0 (~2.3–1
 over scalar). Both paths are pinned equal to their scalar references by dedicated
 equivalence tests; Miri exercises the scalar fallbacks.
 
+`DensityMatrixBackend` simulates circuits as mixed states (`rho = sum_k p_k
+|psi_k><psi_k|`, stored as a `2^n x 2^n` matrix) with a `NoiseModel` that applies
+Kraus channels after gates and readout errors during measurement. Supported channels:
+depolarizing, amplitude damping (T1), phase damping (T2), bit-flip, dephasing, and
+custom Kraus operators. Ideal runs reproduce statevector backend results exactly.
+Cost is O(4^n) memory and O(4^n) per gate, so practical for n <= 12 or so.
+
 Out of scope for the current release: SIMD for the general dense two-qubit path
 (arbitrary non-CNOT/CZ/SWAP `Gate2` — cross-lane 4×4 reductions for modest gain),
-more algorithms (Grover, Deutsch–Jozsa, Simon, Shor), a density-matrix / noise
-backend, and circuit serialization.
+more algorithms (Grover, Deutsch–Jozsa, Simon, Shor), Python bindings (PyO3),
+and OpenQASM 3.0 import/export.

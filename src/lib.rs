@@ -37,22 +37,27 @@ pub mod algorithms;
 mod backend;
 mod circuit;
 mod complex;
+pub mod density;
 mod error;
 mod gate;
 pub mod kernel;
 mod measure;
+pub mod noise;
 mod op;
 mod qubit;
 mod rng;
 mod state;
 
 pub use backend::{
-    Execution, PauliString, StabilizerBackend, StabilizerExecution, StateVectorBackend,
+    DensityMatrixBackend, DensityMatrixExecution, Execution, PauliString, StabilizerBackend,
+    StabilizerExecution, StateVectorBackend,
 };
 pub use circuit::Circuit;
 pub use complex::Complex64;
+pub use density::DensityMatrix;
 pub use error::{Error, Result};
 pub use gate::{Gate1, Gate2};
+pub use noise::NoiseModel;
 pub use op::Op;
 pub use qubit::{ClassicalBit, QubitId};
 pub use rng::Rng;
