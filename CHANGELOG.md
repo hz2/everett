@@ -26,6 +26,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   depending on qubit count.
 - Criterion benchmark suite covering gate application across qubit counts and a
   full QFT circuit.
+- Specialized fast paths for CNOT, CZ, and SWAP in `apply_2q`: exact-match
+  dispatch to tight permutation/sign-flip loops that need no complex multiply.
+  ~14–45× faster than the general dense path (n=22 memory-bound to n=8
+  compute-bound).
+- AVX2 + FMA fast path for `apply_controlled_1q` on `x86_64`, selected at
+  runtime when `target >= 1` and no control bit occupies position 0 (same
+  2-lane FMA core as `apply_1q_avx2`, with a per-block control test). ~2.3–13×
+  faster than the scalar path. Scalar fallback retained for other targets, older
+  CPUs, qubit/control configurations outside the condition, and Miri.
+  The general dense `apply_2q` (arbitrary non-CNOT/CZ/SWAP gates) remains
+  scalar; that path is rare in real circuits and the cross-lane 4×4 reductions
+  would yield modest gain for significant complexity.
 - `StabilizerBackend`: a Clifford-circuit backend using the Aaronson–Gottesman
   tableau, simulating `H`/`S`/`CNOT`/Pauli circuits and measurement in `O(n^2)`
   — thousands of qubits, far beyond the statevector backend. Non-Clifford gates

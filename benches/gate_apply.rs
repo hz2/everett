@@ -75,6 +75,7 @@ fn bench_apply_2q(c: &mut Criterion) {
 }
 
 fn bench_apply_controlled(c: &mut Criterion) {
+    // target=0, controls=[1,2]: scalar path (target >= 1 required for SIMD).
     let mut group = c.benchmark_group("apply_controlled_1q");
     let x = Gate1::x();
     for &n in &QUBITS {
@@ -87,6 +88,29 @@ fn bench_apply_controlled(c: &mut Criterion) {
                     black_box(&mut amps),
                     black_box(&controls),
                     black_box(0),
+                    black_box(&x),
+                );
+            });
+        });
+    }
+    group.finish();
+}
+
+fn bench_apply_controlled_simd(c: &mut Criterion) {
+    // target=n/2 (>= 1), controls=[1,2] (mask=0b110, bit 0 clear): SIMD path.
+    let mut group = c.benchmark_group("apply_controlled_1q_simd");
+    let x = Gate1::x();
+    for &n in &QUBITS {
+        let mut amps = state(n);
+        let controls = [1usize, 2];
+        group.throughput(Throughput::Elements(1u64 << n));
+        group.bench_with_input(BenchmarkId::from_parameter(n), &n, |b, &n| {
+            let target = n / 2;
+            b.iter(|| {
+                apply_controlled_1q(
+                    black_box(&mut amps),
+                    black_box(&controls),
+                    black_box(target),
                     black_box(&x),
                 );
             });
@@ -113,6 +137,7 @@ criterion_group!(
     bench_apply_1q_qubit0,
     bench_apply_2q,
     bench_apply_controlled,
+    bench_apply_controlled_simd,
     bench_qft,
 );
 criterion_main!(benches);

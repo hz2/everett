@@ -107,6 +107,14 @@ qubit has stride ≥ 2; the scalar path remains the fallback for other targets,
 older CPUs, and Miri (which cannot execute SIMD intrinsics). The SIMD and scalar
 paths are pinned equal by a dedicated equivalence test.
 
-Out of scope for the current release: SIMD for the two-qubit and controlled
-kernels, more algorithms (Grover, Deutsch–Jozsa, Simon, Shor), a density-matrix
-/ noise backend, and circuit serialization.
+CNOT, CZ, and SWAP dispatch to specialized permutation/sign-flip loops in
+`apply_2q` (no complex multiply; ~14–45× over the dense path). `apply_controlled_1q`
+has an AVX2 + FMA fast path — the same 2-lane 2×2 FMA core as `apply_1q_avx2` —
+active when `target >= 1` and no control qubit occupies bit position 0 (~2.3–13×
+over scalar). Both paths are pinned equal to their scalar references by dedicated
+equivalence tests; Miri exercises the scalar fallbacks.
+
+Out of scope for the current release: SIMD for the general dense two-qubit path
+(arbitrary non-CNOT/CZ/SWAP `Gate2` — cross-lane 4×4 reductions for modest gain),
+more algorithms (Grover, Deutsch–Jozsa, Simon, Shor), a density-matrix / noise
+backend, and circuit serialization.

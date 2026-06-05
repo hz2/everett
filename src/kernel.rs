@@ -186,11 +186,31 @@ unsafe fn apply_1q_avx2(amps: &mut [Complex64], k: usize, gate: &Gate1) {
 /// and `b` of an `n`-qubit state.
 ///
 /// `a` and `b` must be distinct and both `< n`; `amps` must have length `2^n`.
+///
+/// CNOT, CZ, and SWAP dispatch to specialized loops that avoid complex
+/// multiplies; all other gates use the general dense 4×4 path.
 pub fn apply_2q(amps: &mut [Complex64], a: usize, b: usize, gate: &Gate2) {
     let n = amps.len();
     debug_assert!(a != b);
     debug_assert!(n.is_power_of_two());
     debug_assert!((1usize << a) < n && (1usize << b) < n);
+
+    // exact-match dispatch for the three common permutation/diagonal gates.
+    // these need no complex multiply, so a specialized loop is most of the win.
+    // exact equality is correct because the const matrices use integer values.
+    if *gate == Gate2::cnot() {
+        apply_2q_cnot(amps, a, b);
+        return;
+    }
+    if *gate == Gate2::cz() {
+        apply_2q_cz(amps, a, b);
+        return;
+    }
+    if *gate == Gate2::swap() {
+        apply_2q_swap(amps, a, b);
+        return;
+    }
+
     let mat = &gate.m;
     let groups = n / 4;
     for i in 0..groups {
@@ -223,24 +243,100 @@ pub fn apply_2q(amps: &mut [Complex64], a: usize, b: usize, gate: &Gate2) {
     }
 }
 
+/// CNOT: for each group swap the `i10` and `i11` amplitudes (flip target when
+/// control qubit `a` is set). no complex arithmetic needed.
+fn apply_2q_cnot(amps: &mut [Complex64], a: usize, b: usize) {
+    let groups = amps.len() / 4;
+    for i in 0..groups {
+        let idx = index_quad(a, b, i);
+        debug_assert!(idx.iter().all(|&j| j < amps.len()));
+        // SAFETY: index_quad returns 4 distinct in-bounds indices (Kani-proven).
+        unsafe {
+            let tmp = *amps.get_unchecked(idx[2]);
+            *amps.get_unchecked_mut(idx[2]) = *amps.get_unchecked(idx[3]);
+            *amps.get_unchecked_mut(idx[3]) = tmp;
+        }
+    }
+}
+
+/// CZ: negate the `i11` amplitude. symmetric in its operands.
+fn apply_2q_cz(amps: &mut [Complex64], a: usize, b: usize) {
+    let groups = amps.len() / 4;
+    for i in 0..groups {
+        let idx = index_quad(a, b, i);
+        debug_assert!(idx[3] < amps.len());
+        // SAFETY: index_quad returns 4 distinct in-bounds indices (Kani-proven).
+        unsafe {
+            let v = amps.get_unchecked_mut(idx[3]);
+            *v = -*v;
+        }
+    }
+}
+
+/// SWAP: exchange the `i01` and `i10` amplitudes.
+fn apply_2q_swap(amps: &mut [Complex64], a: usize, b: usize) {
+    let groups = amps.len() / 4;
+    for i in 0..groups {
+        let idx = index_quad(a, b, i);
+        debug_assert!(idx.iter().all(|&j| j < amps.len()));
+        // SAFETY: index_quad returns 4 distinct in-bounds indices (Kani-proven).
+        unsafe {
+            let tmp = *amps.get_unchecked(idx[1]);
+            *amps.get_unchecked_mut(idx[1]) = *amps.get_unchecked(idx[2]);
+            *amps.get_unchecked_mut(idx[2]) = tmp;
+        }
+    }
+}
+
 /// Applies a single-qubit gate to `target`, but only on the subspace where
 /// every qubit in `controls` is set. This is the general controlled gate.
 ///
 /// `target` must not appear in `controls`; all indices must be `< n`.
+///
+/// On `x86_64` with AVX2 + FMA, and when `target >= 1` and no control bit
+/// occupies position 0, dispatches to a vectorized path that processes two
+/// amplitude pairs per iteration (same FMA core as `apply_1q_avx2`).
 pub fn apply_controlled_1q(
     amps: &mut [Complex64],
     controls: &[usize],
     target: usize,
     gate: &Gate1,
 ) {
-    let n = amps.len();
     debug_assert!(!controls.contains(&target));
-    debug_assert!(n.is_power_of_two());
-    let m = &gate.m;
+    debug_assert!(amps.len().is_power_of_two());
     let mut control_mask = 0usize;
     for &c in controls {
         control_mask |= 1usize << c;
     }
+
+    // the SIMD path processes two adjacent pairs per step. the two i0 values in
+    // a step differ only in bit 0, so they share the same control test iff bit 0
+    // is not a control bit. also need target >= 1 (stride >= 2) to load two
+    // contiguous complex per register, same condition as apply_1q_avx2.
+    #[cfg(all(target_arch = "x86_64", not(miri)))]
+    {
+        if target >= 1
+            && (control_mask & 1) == 0
+            && is_x86_feature_detected!("avx2")
+            && is_x86_feature_detected!("fma")
+        {
+            // SAFETY: guarded by the runtime feature detection just above.
+            unsafe { apply_controlled_1q_avx2(amps, control_mask, target, gate) };
+            return;
+        }
+    }
+
+    apply_controlled_1q_scalar(amps, control_mask, target, gate);
+}
+
+fn apply_controlled_1q_scalar(
+    amps: &mut [Complex64],
+    control_mask: usize,
+    target: usize,
+    gate: &Gate1,
+) {
+    let n = amps.len();
+    let m = &gate.m;
     let pairs = n / 2;
     for i in 0..pairs {
         let (i0, i1) = index_pair(target, i);
@@ -257,6 +353,85 @@ pub fn apply_controlled_1q(
                 *amps.get_unchecked_mut(i0) = m[0] * a0 + m[1] * a1;
                 *amps.get_unchecked_mut(i1) = m[2] * a0 + m[3] * a1;
             }
+        }
+    }
+}
+
+/// AVX2 + FMA controlled single-qubit kernel. Processes two adjacent amplitude
+/// pairs per iteration when the control test passes.
+///
+/// Preconditions (caller checks): `target >= 1`, `(control_mask & 1) == 0`,
+/// AVX2+FMA available. The bit-0 condition ensures both pairs in each iteration
+/// share the same control outcome — the two i0 values differ only in bit 0,
+/// which is not a control bit, so `i0a & mask == i0b & mask`.
+#[cfg(all(target_arch = "x86_64", not(miri)))]
+#[target_feature(enable = "avx2,fma")]
+// m00r/m00i etc. are parallel matrix-entry broadcasts; similar names are the point.
+#[allow(clippy::similar_names)]
+unsafe fn apply_controlled_1q_avx2(
+    amps: &mut [Complex64],
+    control_mask: usize,
+    target: usize,
+    gate: &Gate1,
+) {
+    use std::arch::x86_64::{
+        _mm256_add_pd, _mm256_fmaddsub_pd, _mm256_loadu_pd, _mm256_mul_pd, _mm256_permute_pd,
+        _mm256_set1_pd, _mm256_storeu_pd,
+    };
+
+    let n = amps.len();
+    let stride = 1usize << target; // >= 2
+    let m = &gate.m;
+
+    // SAFETY (whole body): same repr aliasing as apply_1q_avx2 — `Complex64`
+    // is `#[repr(C)]` so ptr.add(2*i) addresses amplitude i. the stride loop
+    // visits each pair (i0, i1 = i0 + stride) exactly once, both in bounds.
+    // reads happen before writes; i0/i1 runs are disjoint. the control test
+    // uses i0 (both pairs in the block pass or fail identically because bit 0
+    // is not a control bit, per the precondition checked by the caller).
+    unsafe {
+        let m00r = _mm256_set1_pd(m[0].re);
+        let m00i = _mm256_set1_pd(m[0].im);
+        let m01r = _mm256_set1_pd(m[1].re);
+        let m01i = _mm256_set1_pd(m[1].im);
+        let m10r = _mm256_set1_pd(m[2].re);
+        let m10i = _mm256_set1_pd(m[2].im);
+        let m11r = _mm256_set1_pd(m[3].re);
+        let m11i = _mm256_set1_pd(m[3].im);
+
+        let ptr = amps.as_mut_ptr().cast::<f64>();
+        let mut base = 0;
+        while base < n {
+            let mut off = 0;
+            while off < stride {
+                // two adjacent pairs: (base+off, base+off+stride) and
+                // (base+off+1, base+off+1+stride). off and off+1 both clear
+                // the target bit (off < stride, so bit `target` is clear in
+                // off when it starts at 0 and increments by 2 below).
+                let i0a = base + off;
+                // test control on i0a; i0a+1 gives the same result because bit 0
+                // is not a control bit (precondition), so both pairs pass or fail.
+                if i0a & control_mask == control_mask {
+                    let i1a = i0a + stride;
+                    // load two complex from i0a,i0b and i1a,i1b.
+                    let v0 = _mm256_loadu_pd(ptr.add(2 * i0a));
+                    let v1 = _mm256_loadu_pd(ptr.add(2 * i1a));
+                    let v0s = _mm256_permute_pd(v0, 0b0101);
+                    let v1s = _mm256_permute_pd(v1, 0b0101);
+                    let m00v0 = _mm256_fmaddsub_pd(m00r, v0, _mm256_mul_pd(m00i, v0s));
+                    let m01v1 = _mm256_fmaddsub_pd(m01r, v1, _mm256_mul_pd(m01i, v1s));
+                    let m10v0 = _mm256_fmaddsub_pd(m10r, v0, _mm256_mul_pd(m10i, v0s));
+                    let m11v1 = _mm256_fmaddsub_pd(m11r, v1, _mm256_mul_pd(m11i, v1s));
+                    let new0 = _mm256_add_pd(m00v0, m01v1);
+                    let new1 = _mm256_add_pd(m10v0, m11v1);
+                    // 256-bit storeu writes 4 f64 = 2 complex starting at i0a,
+                    // covering both i0a and i0b (adjacent). same for i1a/i1b.
+                    _mm256_storeu_pd(ptr.add(2 * i0a), new0);
+                    _mm256_storeu_pd(ptr.add(2 * i1a), new1);
+                }
+                off += 2;
+            }
+            base += 2 * stride;
         }
     }
 }
@@ -457,6 +632,103 @@ mod tests {
         (0..(1usize << n))
             .map(|j| Complex64::new(0.1 + j as f64 * 0.03, -0.2 + j as f64 * 0.017))
             .collect()
+    }
+
+    #[test]
+    fn specialized_2q_matches_dense() {
+        // the CNOT/CZ/SWAP fast paths must agree with the general dense kernel
+        // across all qubit counts n=2..10 and every distinct operand pair (a,b).
+        for n in 2..=10 {
+            for a in 0..n {
+                for b in 0..n {
+                    if a == b {
+                        continue;
+                    }
+                    let base = sample_state(n);
+                    for gate in [Gate2::cnot(), Gate2::cz(), Gate2::swap()] {
+                        let mut via_dispatch = base.clone();
+                        apply_2q(&mut via_dispatch, a, b, &gate);
+
+                        // run the general dense path directly by bypassing dispatch:
+                        // build a fresh gate that is != the const matrices so the
+                        // specialized branch is NOT taken. instead scale by 1.0 to
+                        // produce a semantically identical but pointer-distinct gate.
+                        // easier: just call apply_2q on a copy for the scalar ref by
+                        // using a non-matching gate wrapped in the dense path.
+                        // simplest correct ref: a dedicated dense-only fn.
+                        let mut via_dense = base.clone();
+                        apply_2q_dense_ref(&mut via_dense, a, b, &gate);
+
+                        for (x, y) in via_dispatch.iter().zip(&via_dense) {
+                            assert!(
+                                (*x - *y).norm() < 1e-12,
+                                "specialized/dense mismatch n={n} a={a} b={b}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // reference dense path that never takes the specialized branches.
+    fn apply_2q_dense_ref(amps: &mut [Complex64], a: usize, b: usize, gate: &Gate2) {
+        let n = amps.len();
+        let mat = &gate.m;
+        let groups = n / 4;
+        for i in 0..groups {
+            let idx = index_quad(a, b, i);
+            let amp = [amps[idx[0]], amps[idx[1]], amps[idx[2]], amps[idx[3]]];
+            for (row, &out) in idx.iter().enumerate() {
+                let base = row * 4;
+                amps[out] = mat[base] * amp[0]
+                    + mat[base + 1] * amp[1]
+                    + mat[base + 2] * amp[2]
+                    + mat[base + 3] * amp[3];
+            }
+        }
+    }
+
+    #[test]
+    fn simd_controlled_matches_scalar() {
+        // apply_controlled_1q dispatches to SIMD on x86_64+avx2 when target>=1
+        // and (control_mask & 1)==0. check SIMD≡scalar across qubit counts,
+        // operand placements, and a representative gate set.
+        let gates = [
+            Gate1::x(),
+            Gate1::y(),
+            Gate1::z(),
+            Gate1::h(),
+            Gate1::s(),
+            Gate1::rx(1.1),
+            Gate1::ry(-0.7),
+            Gate1::rz(2.3),
+        ];
+        for n in 2..=10 {
+            for target in 0..n {
+                for ctrl in 0..n {
+                    if ctrl == target {
+                        continue;
+                    }
+                    let control_mask = 1usize << ctrl;
+                    let base = sample_state(n);
+                    for g in &gates {
+                        let mut via_dispatch = base.clone();
+                        apply_controlled_1q(&mut via_dispatch, &[ctrl], target, g);
+
+                        let mut via_scalar = base.clone();
+                        apply_controlled_1q_scalar(&mut via_scalar, control_mask, target, g);
+
+                        for (x, y) in via_dispatch.iter().zip(&via_scalar) {
+                            assert!(
+                                (*x - *y).norm() < 1e-12,
+                                "controlled SIMD/scalar mismatch n={n} target={target} ctrl={ctrl}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
     }
 
     #[test]
