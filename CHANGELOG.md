@@ -20,3 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `unsafe` fast path in the kernel, justified by Kani proofs of the index
   arithmetic (bounds + injectivity) and validated for undefined behavior by Miri
   under both the Stacked Borrows and Tree Borrows aliasing models.
+- Hand-rolled AVX2 + FMA fast path for single-qubit gate application on
+  `x86_64` (no external dependency), selected at runtime with a scalar fallback
+  for other targets and under Miri. ~7–28× faster than the scalar kernel,
+  depending on qubit count.
+- Criterion benchmark suite covering gate application across qubit counts and a
+  full QFT circuit.

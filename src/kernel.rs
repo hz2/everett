@@ -68,10 +68,37 @@ pub(crate) fn index_quad(a: usize, b: usize, i: usize) -> [usize; 4] {
 /// Applies a single-qubit gate to qubit `k` of an `n`-qubit state.
 ///
 /// `amps` must have length `2^n` (a power of two) and `k` must be `< n`.
+///
+/// On `x86_64` with AVX2 + FMA this dispatches to a vectorized path that
+/// processes two amplitude pairs per step; everywhere else (and under Miri) it
+/// uses the scalar path. Both compute the same result — the SIMD path is checked
+/// against the scalar one by the kernel-vs-naive property test.
 pub fn apply_1q(amps: &mut [Complex64], k: usize, gate: &Gate1) {
+    debug_assert!(amps.len().is_power_of_two());
+    debug_assert!(
+        (1usize << k) < amps.len(),
+        "qubit index k must be < log2(n)"
+    );
+
+    // the SIMD path needs stride >= 2 (k >= 1) so each AVX register holds two
+    // complex amplitudes that share one matrix application. k == 0 (adjacent
+    // pairs) stays scalar.
+    #[cfg(all(target_arch = "x86_64", not(miri)))]
+    {
+        if k >= 1 && is_x86_feature_detected!("avx2") && is_x86_feature_detected!("fma") {
+            // SAFETY: guarded by the runtime feature detection just above.
+            unsafe { apply_1q_avx2(amps, k, gate) };
+            return;
+        }
+    }
+
+    apply_1q_scalar(amps, k, gate);
+}
+
+/// The portable scalar single-qubit kernel. Always correct; the SIMD path is
+/// validated against it.
+fn apply_1q_scalar(amps: &mut [Complex64], k: usize, gate: &Gate1) {
     let n = amps.len();
-    debug_assert!(n.is_power_of_two());
-    debug_assert!((1usize << k) < n, "qubit index k must be < log2(n)");
     let m = &gate.m;
     let pairs = n / 2;
     for i in 0..pairs {
@@ -87,6 +114,70 @@ pub fn apply_1q(amps: &mut [Complex64], k: usize, gate: &Gate1) {
             let a1 = *amps.get_unchecked(i1);
             *amps.get_unchecked_mut(i0) = m[0] * a0 + m[1] * a1;
             *amps.get_unchecked_mut(i1) = m[2] * a0 + m[3] * a1;
+        }
+    }
+}
+
+/// AVX2 + FMA single-qubit kernel. Processes two amplitude pairs per iteration.
+///
+/// Requires `k >= 1` (stride `>= 2`) so that the bit-`k`-clear indices and their
+/// partners each form contiguous runs of two `Complex64` that fit one register.
+#[cfg(all(target_arch = "x86_64", not(miri)))]
+#[target_feature(enable = "avx2,fma")]
+// the m00r/m00i/... broadcasts map directly onto the gate matrix entries; the
+// parallel naming is the point, so the similar-names lint is noise here.
+#[allow(clippy::similar_names)]
+unsafe fn apply_1q_avx2(amps: &mut [Complex64], k: usize, gate: &Gate1) {
+    use std::arch::x86_64::{
+        _mm256_add_pd, _mm256_fmaddsub_pd, _mm256_loadu_pd, _mm256_mul_pd, _mm256_permute_pd,
+        _mm256_set1_pd, _mm256_storeu_pd,
+    };
+
+    let n = amps.len();
+    let stride = 1usize << k; // >= 2 and even
+    let m = &gate.m;
+
+    // SAFETY (whole body): `Complex64` is `#[repr(C)]` so `[Complex64]` aliases
+    // `[f64]` two-to-one; `ptr.add(2 * i)` addresses amplitude `i`. the stride
+    // loop visits each pair (i0, i1 = i0 + stride) exactly once with both runs
+    // in bounds: the largest access is `i1 + 1 = base + 2*stride - 1 < n`. reads
+    // happen before writes and the i0/i1 runs are disjoint, so no aliasing.
+    unsafe {
+        // broadcast the real and imaginary parts of each matrix entry.
+        let m00r = _mm256_set1_pd(m[0].re);
+        let m00i = _mm256_set1_pd(m[0].im);
+        let m01r = _mm256_set1_pd(m[1].re);
+        let m01i = _mm256_set1_pd(m[1].im);
+        let m10r = _mm256_set1_pd(m[2].re);
+        let m10i = _mm256_set1_pd(m[2].im);
+        let m11r = _mm256_set1_pd(m[3].re);
+        let m11i = _mm256_set1_pd(m[3].im);
+
+        let ptr = amps.as_mut_ptr().cast::<f64>();
+        let mut base = 0;
+        while base < n {
+            let mut off = 0;
+            while off < stride {
+                let i0 = base + off;
+                let i1 = i0 + stride;
+                // each register holds two complex: [re0, im0, re1, im1].
+                let v0 = _mm256_loadu_pd(ptr.add(2 * i0));
+                let v1 = _mm256_loadu_pd(ptr.add(2 * i1));
+                // swap re/im within each complex for the cross terms.
+                let v0s = _mm256_permute_pd(v0, 0b0101);
+                let v1s = _mm256_permute_pd(v1, 0b0101);
+                // fmaddsub(mr, z, mi*swap(z)) = (mr,mi) * z, packed two complex.
+                let m00v0 = _mm256_fmaddsub_pd(m00r, v0, _mm256_mul_pd(m00i, v0s));
+                let m01v1 = _mm256_fmaddsub_pd(m01r, v1, _mm256_mul_pd(m01i, v1s));
+                let m10v0 = _mm256_fmaddsub_pd(m10r, v0, _mm256_mul_pd(m10i, v0s));
+                let m11v1 = _mm256_fmaddsub_pd(m11r, v1, _mm256_mul_pd(m11i, v1s));
+                let new0 = _mm256_add_pd(m00v0, m01v1);
+                let new1 = _mm256_add_pd(m10v0, m11v1);
+                _mm256_storeu_pd(ptr.add(2 * i0), new0);
+                _mm256_storeu_pd(ptr.add(2 * i1), new1);
+                off += 2;
+            }
+            base += 2 * stride;
         }
     }
 }
@@ -358,6 +449,50 @@ mod tests {
             apply_controlled_1q(&mut amps, &[0], 1, &Gate1::z());
             let norm: f64 = amps.iter().map(|a| a.norm_sqr()).sum();
             assert!((norm - 1.0).abs() < 1e-12);
+        }
+    }
+
+    // a deterministic but non-trivial state for equivalence checks.
+    fn sample_state(n: usize) -> Vec<Complex64> {
+        (0..(1usize << n))
+            .map(|j| Complex64::new(0.1 + j as f64 * 0.03, -0.2 + j as f64 * 0.017))
+            .collect()
+    }
+
+    #[test]
+    fn simd_path_matches_scalar() {
+        // apply_1q dispatches to SIMD on x86_64+avx2; it must agree with the
+        // scalar reference for every qubit and a representative gate set. on
+        // non-x86 or non-avx2 both calls are scalar, so this is still a valid
+        // (if trivial) check there.
+        let gates = [
+            Gate1::h(),
+            Gate1::x(),
+            Gate1::y(),
+            Gate1::s(),
+            Gate1::t(),
+            Gate1::rx(0.7),
+            Gate1::ry(-1.3),
+            Gate1::rz(2.1),
+            Gate1::phase(0.9),
+        ];
+        for n in 1..=10 {
+            for k in 0..n {
+                for g in &gates {
+                    let mut via_dispatch = sample_state(n);
+                    let mut via_scalar = via_dispatch.clone();
+                    apply_1q(&mut via_dispatch, k, g);
+                    apply_1q_scalar(&mut via_scalar, k, g);
+                    for (a, b) in via_dispatch.iter().zip(&via_scalar) {
+                        // FMA in the SIMD path can differ from separate mul+add
+                        // by a rounding step, so allow a tiny tolerance.
+                        assert!(
+                            (*a - *b).norm() < 1e-12,
+                            "mismatch at n={n} k={k}: {a} vs {b}"
+                        );
+                    }
+                }
+            }
         }
     }
 }

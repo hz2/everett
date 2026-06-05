@@ -89,13 +89,16 @@ Correctness is checked at the layer each tool is suited to:
 The split matters: floating-point properties (is this gate unitary?) are a poor
 fit for SMT solvers and live in property tests with tolerances, while the
 integer/memory-safety properties (is this index in bounds?) are exactly what
-bounded model checking proves cleanly. See the parent dumping ground's
-`.claude/notes/research-miri-formal.md` for the full rationale.
+bounded model checking proves cleanly.
 
 ## Roadmap
 
-Out of scope for v1, recorded as `// TODO` markers and in
-`.claude/memory/everett-future-work.md`: a stabilizer/Clifford backend behind the
-same `Backend` trait, a SIMD kernel (struct-of-arrays + `pulp`) with the scalar
-path retained for Miri, more algorithms (Grover, Deutsch–Jozsa, Simon, Shor),
-and circuit serialization.
+The single-qubit kernel has a hand-rolled AVX2 + FMA fast path on `x86_64`
+(`apply_1q_avx2`), chosen at runtime when the CPU supports it and the target
+qubit has stride ≥ 2; the scalar path remains the fallback for other targets,
+older CPUs, and Miri (which cannot execute SIMD intrinsics). The SIMD and scalar
+paths are pinned equal by a dedicated equivalence test.
+
+Out of scope for the current release: a stabilizer/Clifford backend behind the
+same `Backend` trait, SIMD for the two-qubit and controlled kernels, more
+algorithms (Grover, Deutsch–Jozsa, Simon, Shor), and circuit serialization.
