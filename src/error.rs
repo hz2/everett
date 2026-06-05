@@ -35,6 +35,12 @@ pub enum Error {
         /// The number of amplitudes expected (`2^n`).
         expected: usize,
     },
+    /// A circuit run on the stabilizer backend used a gate outside the Clifford
+    /// group, which that backend cannot simulate.
+    NonClifford {
+        /// A human-readable name for the offending gate.
+        gate: &'static str,
+    },
 }
 
 impl fmt::Display for Error {
@@ -57,6 +63,12 @@ impl fmt::Display for Error {
             }
             Self::DimensionMismatch { len, expected } => {
                 write!(f, "amplitude buffer has length {len}, expected {expected}")
+            }
+            Self::NonClifford { gate } => {
+                write!(
+                    f,
+                    "{gate} is not in the Clifford group; the stabilizer backend cannot simulate it"
+                )
             }
         }
     }

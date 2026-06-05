@@ -46,7 +46,9 @@ mod qubit;
 mod rng;
 mod state;
 
-pub use backend::{Execution, StateVectorBackend};
+pub use backend::{
+    Execution, PauliString, StabilizerBackend, StabilizerExecution, StateVectorBackend,
+};
 pub use circuit::Circuit;
 pub use complex::Complex64;
 pub use error::{Error, Result};

@@ -36,8 +36,16 @@ Backend trait  ◀──implements──  StateVectorBackend
   a 2-qubit gate, a controlled gate, and measure — and a shared `drive` function
   layers circuit traversal and classical control on top. A new backend
   implements only those four methods.
-- **`StateVectorBackend`** is the one v1 backend: it evolves a dense `State`.
-- **`kernel`** is the numerical core (see [kernel-math.md](kernel-math.md)).
+- **`StateVectorBackend`** evolves a dense `State` of `2^n` amplitudes — exact
+  for any circuit, but exponential in memory.
+- **`StabilizerBackend`** simulates *Clifford* circuits (`H`/`S`/`CNOT`/Pauli) in
+  `O(n^2)` via the Aaronson–Gottesman tableau, reaching thousands of qubits;
+  non-Clifford gates are rejected with `Error::NonClifford`. It is the payoff of
+  the `Backend` seam — a second backend that reuses `drive` (so measurement and
+  classical control come for free) and is cross-validated against the
+  statevector backend.
+- **`kernel`** is the statevector numerical core (see
+  [kernel-math.md](kernel-math.md)).
 
 ## Decisions
 
@@ -99,6 +107,6 @@ qubit has stride ≥ 2; the scalar path remains the fallback for other targets,
 older CPUs, and Miri (which cannot execute SIMD intrinsics). The SIMD and scalar
 paths are pinned equal by a dedicated equivalence test.
 
-Out of scope for the current release: a stabilizer/Clifford backend behind the
-same `Backend` trait, SIMD for the two-qubit and controlled kernels, more
-algorithms (Grover, Deutsch–Jozsa, Simon, Shor), and circuit serialization.
+Out of scope for the current release: SIMD for the two-qubit and controlled
+kernels, more algorithms (Grover, Deutsch–Jozsa, Simon, Shor), a density-matrix
+/ noise backend, and circuit serialization.

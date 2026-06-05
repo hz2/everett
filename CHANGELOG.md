@@ -26,3 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   depending on qubit count.
 - Criterion benchmark suite covering gate application across qubit counts and a
   full QFT circuit.
+- `StabilizerBackend`: a Clifford-circuit backend using the Aaronson–Gottesman
+  tableau, simulating `H`/`S`/`CNOT`/Pauli circuits and measurement in `O(n^2)`
+  — thousands of qubits, far beyond the statevector backend. Non-Clifford gates
+  are rejected with `Error::NonClifford`. Cross-validated against the statevector
+  backend (the statevector is a `+1` eigenstate of every reported stabilizer
+  generator) over random Clifford circuits.
+- `PauliString` type with Pauli-operator expectation values.

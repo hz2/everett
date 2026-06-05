@@ -6,8 +6,10 @@
 //! stays independent of how a circuit is simulated, and so the shared op-walking
 //! logic — including measurement and classical control — is written once.
 
+mod stabilizer;
 mod statevector;
 
+pub use stabilizer::{PauliString, StabilizerBackend, StabilizerExecution};
 pub use statevector::{Execution, StateVectorBackend};
 
 use crate::gate::{Gate1, Gate2};
