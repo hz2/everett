@@ -1,16 +1,10 @@
 //! Execution backends.
 //!
 //! A [`Backend`] knows how to apply gates and measure qubits on some state
-//! representation. The default and only v1 backend is [`StateVectorBackend`],
-//! which evolves a dense [`crate::state::State`]. The trait exists so the
-//! circuit front end stays independent of how a circuit is simulated, and so
-//! the shared op-walking logic (the internal `drive` function) — including
-//! measurement and classical control — is written once.
-//!
-//! TODO: a stabilizer/Clifford backend that simulates Clifford circuits in
-//! polynomial time would slot in behind this same trait without touching the
-//! circuit builder. See `.claude/memory/everett-future-work.md` in the parent
-//! dumping ground for the broader roadmap.
+//! representation. The default backend is [`StateVectorBackend`], which evolves
+//! a dense [`crate::state::State`]. The trait exists so the circuit front end
+//! stays independent of how a circuit is simulated, and so the shared op-walking
+//! logic — including measurement and classical control — is written once.
 
 mod statevector;
 
