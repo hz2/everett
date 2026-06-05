@@ -16,7 +16,7 @@ fn main() -> everett::Result<()> {
                 u8::from(bit1),
                 u8::from(c[0]),
                 u8::from(c[1]),
-                if ok { "✓" } else { "✗" }
+                if ok { "ok" } else { "FAIL" }
             );
         }
     }
