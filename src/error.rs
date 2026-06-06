@@ -138,7 +138,7 @@ mod tests {
     #[test]
     fn non_clifford_message() {
         let e = Error::NonClifford { gate: "T" };
-        assert!(e.to_string().contains("T"));
+        assert!(e.to_string().contains('T'));
         assert!(e.to_string().contains("Clifford"));
     }
 
