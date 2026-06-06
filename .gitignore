@@ -4,5 +4,4 @@ result-*
 *.snap.new
 /coverage/
 .direnv/
-# transient subagent git worktrees created by the harness
-.claude
+.claude/settings.local.json

@@ -1,0 +1,4 @@
+- [Project overview](project-overview.md) — everett: zero-dependency quantum simulator published on crates.io
+- [Tooling](tooling.md) — nix-first dev workflow; all builds, tests, and tools run through nix develop
+- [CI](ci.md) — GitHub Actions: nix flake check, miri, kani, coverage, release-check
+- [Publishing](publishing.md) — crates.io publish workflow and versioning conventions

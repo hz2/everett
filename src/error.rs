@@ -98,25 +98,40 @@ mod tests {
 
     #[test]
     fn qubit_out_of_range_message() {
-        let e = Error::QubitOutOfRange { qubit: QubitId(3), num_qubits: 2 };
+        let e = Error::QubitOutOfRange {
+            qubit: QubitId(3),
+            num_qubits: 2,
+        };
         assert_eq!(e.to_string(), "qubit q3 out of range for 2-qubit register");
     }
 
     #[test]
     fn classical_bit_out_of_range_message() {
-        let e = Error::ClassicalBitOutOfRange { bit: ClassicalBit(5), num_classical: 3 };
-        assert_eq!(e.to_string(), "classical bit c5 out of range for 3-bit register");
+        let e = Error::ClassicalBitOutOfRange {
+            bit: ClassicalBit(5),
+            num_classical: 3,
+        };
+        assert_eq!(
+            e.to_string(),
+            "classical bit c5 out of range for 3-bit register"
+        );
     }
 
     #[test]
     fn duplicate_qubit_message() {
         let e = Error::DuplicateQubit { qubit: QubitId(1) };
-        assert_eq!(e.to_string(), "qubit q1 used more than once in a single gate");
+        assert_eq!(
+            e.to_string(),
+            "qubit q1 used more than once in a single gate"
+        );
     }
 
     #[test]
     fn dimension_mismatch_message() {
-        let e = Error::DimensionMismatch { len: 3, expected: 4 };
+        let e = Error::DimensionMismatch {
+            len: 3,
+            expected: 4,
+        };
         assert_eq!(e.to_string(), "amplitude buffer has length 3, expected 4");
     }
 
@@ -129,7 +144,11 @@ mod tests {
 
     #[test]
     fn qasm_error_message() {
-        let e = Error::Qasm { line: 5, col: 10, message: "unexpected token".into() };
+        let e = Error::Qasm {
+            line: 5,
+            col: 10,
+            message: "unexpected token".into(),
+        };
         assert_eq!(e.to_string(), "OpenQASM 3 error at 5:10: unexpected token");
     }
 
