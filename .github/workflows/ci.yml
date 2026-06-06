@@ -30,24 +30,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: install miri
-        # each rustup component needs its own --component flag. the nightly
-        # toolchain is selected per-command with `+nightly` below, which takes
-        # precedence over the repo's rust-toolchain.toml (pinned to stable).
-        run: |
-          rustup toolchain install nightly --component miri --component rust-src
-          cargo +nightly miri setup
-      - name: cargo miri test
-        run: |
-          MIRIFLAGS="-Zmiri-strict-provenance -Zmiri-tree-borrows" \
-            cargo +nightly miri test miri_
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock', '**/Cargo.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+      - run: >
+          nix develop .#miri --command
+          env MIRIFLAGS="-Zmiri-strict-provenance -Zmiri-tree-borrows"
+          cargo miri test miri_
 
   kani:
     name: kani
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: model-checking/kani-github-action@v1
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock', '**/Cargo.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+      - run: nix develop .#kani --command cargo kani
 
   release-check:
     name: release check
@@ -55,7 +58,12 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v5
-      - run: cargo publish --dry-run
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock', '**/Cargo.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+      - run: nix develop --command cargo publish --dry-run
 
   coverage:
     name: coverage
