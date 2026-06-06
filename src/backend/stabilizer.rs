@@ -1,15 +1,15 @@
 //! The stabilizer (Clifford) backend.
 //!
-//! Clifford circuits — those built from `H`, `S`, `CNOT`, and the Paulis — are
+//! Clifford circuits (those built from `H`, `S`, `CNOT`, and the Paulis) are
 //! efficiently classically simulable by the Gottesman–Knill theorem. Rather than
 //! store `2^n` amplitudes, this backend tracks the state's *stabilizer group*: a
 //! set of `n` Pauli operators that fix the state (`P|psi> = |psi>`). That needs
 //! only `O(n^2)` bits and `O(n^2)` work per gate, so Clifford circuits on
-//! hundreds of qubits are routine — far past the statevector backend's reach.
+//! hundreds of qubits are routine, far past the statevector backend's reach.
 //!
 //! The implementation is the Aaronson–Gottesman tableau (the "CHP" algorithm,
 //! <https://arxiv.org/abs/quant-ph/0406196>). The tableau holds `2n` Pauli rows
-//! — `n` *stabilizer* generators and `n` *destabilizer* generators — plus one
+//! (`n` *stabilizer* generators and `n` *destabilizer* generators) plus one
 //! scratch row. Each row is a Pauli string encoded by bits `x_j`, `z_j` (the
 //! Pauli on qubit `j` is `I`, `X`, `Z`, or `Y` for `(x,z) =` `00`, `10`, `01`,
 //! `11`) and a phase bit `r` (`0` → `+1`, `1` → `-1`).

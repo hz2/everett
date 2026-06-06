@@ -4,7 +4,7 @@ use everett::algorithms::superdense;
 use everett::prelude::*;
 
 fn main() -> everett::Result<()> {
-    println!("Superdense coding — all four bit pairs:");
+    println!("Superdense coding, all four bit pairs:");
     for bit0 in [false, true] {
         for bit1 in [false, true] {
             let exec = StateVectorBackend::run(&superdense::superdense_circuit(bit0, bit1))?;

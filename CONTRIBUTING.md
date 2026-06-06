@@ -16,8 +16,8 @@ Thanks for your interest in contributing.
 
 ## Style
 
-- Inline comments (`//`) are lowercase and terse. The exception is math —
-  bit-indexing, gate matrices, Trotter steps — which may be longer.
+- Inline comments (`//`) are lowercase and terse. The exception is math
+  (bit-indexing, gate matrices, Trotter steps), which may be longer.
 - Doc comments (`///`, `//!`) follow standard Rust practice: a summary line,
   `# Examples` with doctests on public items, and `# Errors`/`# Panics` where
   relevant.

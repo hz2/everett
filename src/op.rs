@@ -1,7 +1,7 @@
 //! The circuit instruction set.
 //!
 //! A [`crate::circuit::Circuit`] is a sequence of [`Op`]s. Keeping operations as
-//! data — rather than as direct calls into a backend — lets a circuit be
+//! data, rather than as direct calls into a backend, lets a circuit be
 //! inspected, reused across backends, and (eventually) serialized. Measurement
 //! and classical control are first-class so that algorithms like teleportation,
 //! which branch on mid-circuit measurement outcomes, are expressible.

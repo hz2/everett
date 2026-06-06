@@ -40,7 +40,7 @@ zero bit at position $k$*. The low $k$ bits of $i$ pass through unchanged; the
 remaining bits shift up by one to vacate position $k$:
 
 $$
-i_0 = \bigl((i \gg k) \ll (k+1)\bigr) \;\mathbin{|}\; \bigl(i \mathbin{\&} (2^k - 1)\bigr),
+i_0 = \bigl((i \gg k) \ll (k+1)\bigr) \;\mathbin{|}\; \bigl(i \wedge (2^k - 1)\bigr),
 \qquad
 i_1 = i_0 \mathbin{|} 2^k .
 $$
@@ -51,7 +51,7 @@ $i_0 = h \cdot 2^{k+1} + \ell$, which has bit $k$ equal to $0$ by construction.
 The map $i \mapsto i_0$ is a bijection from $\{0, \dots, 2^{n-1}-1\}$ onto the
 $2^{n-1}$ indices with bit $k$ clear, and each such $i_0$ pairs with a distinct
 $i_1$. So across the loop **every index in $\{0, \dots, N-1\}$ is written exactly
-once** — the loop is a permutation of the amplitude array. This is the property
+once**: the loop is a permutation of the amplitude array. This is the property
 the Kani proofs in `kernel::proofs` establish for the unsafe fast path:
 
 - $i_0 < N$ and $i_1 < N$ (in bounds),
@@ -64,8 +64,8 @@ is $O(N)$ with no allocation.
 ## Two-qubit gates: groups of four
 
 A gate on qubits $a$ and $b$ mixes the four basis states that differ only in
-those two bits. We insert *two* zero bits — at the lower target position first,
-then the higher — to build a base index with both target bits clear, then set
+those two bits. We insert *two* zero bits (at the lower target position first,
+then the higher) to build a base index with both target bits clear, then set
 the bits to enumerate the group:
 
 $$
@@ -82,15 +82,16 @@ multiply:
 - **CZ** negates $\psi_{i_{11}}$ only.
 - **SWAP** exchanges $\psi_{i_{01}} \leftrightarrow \psi_{i_{10}}$.
 
-`everett` applies the dense $4 \times 4$ matrix uniformly for clarity; the
-specializations are a future optimization.
+`everett` dispatches CNOT, CZ, and SWAP to these specialized loops (no complex
+multiply) and applies the dense $4 \times 4$ matrix for every other two-qubit
+gate.
 
 ## Controlled gates
 
 A gate controlled on a set $C$ of qubits applies its single-qubit core only on
 the subspace where every control bit is set. Using the single-qubit pairing
 above, build the control mask $m = \sum_{c \in C} 2^c$ and apply the $2 \times 2$
-update to the pair $(i_0, i_1)$ only when $i_0 \mathbin{\&} m = m$. Because $i_0$
+update to the pair $(i_0, i_1)$ only when $i_0 \wedge m = m$. Because $i_0$
 and $i_1$ agree on every bit except the target, testing $i_0$ alone is
 sufficient.
 
@@ -106,7 +107,7 @@ $$
 
 holding all other indices fixed. "Iterate over the pairs that differ only in bit
 $k$" is exactly "sum over the contracted index for every setting of the
-others" — the pair-iteration loop *is* the contraction.
+others": the pair-iteration loop *is* the contraction.
 
 ## Precision
 
@@ -114,4 +115,4 @@ Amplitudes are `f64`. Unitary evolution preserves the norm in exact arithmetic,
 but rounding causes slow drift over deep circuits; `State::normalize` rescales to
 unit norm and should be called periodically and after any measurement collapse.
 State comparisons use fidelity $|\langle\phi|\psi\rangle|^2$, which is invariant
-under global phase — the right notion of "same state" physically.
+under global phase: the right notion of "same state" physically.

@@ -1,7 +1,7 @@
 //! Gate matrices.
 //!
 //! A single-qubit gate is a `2x2` unitary; a two-qubit gate is a `4x4` unitary.
-//! These types only *store* the matrix — the actual application to a state is
+//! These types only *store* the matrix; the actual application to a state is
 //! the kernel's job (see [`crate::kernel`]). Matrices are kept tiny and stored
 //! in row-major order so the kernel can index them directly.
 

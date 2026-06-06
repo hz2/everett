@@ -7,7 +7,7 @@ use everett::algorithms::prep;
 use everett::{Circuit, DensityMatrixBackend, NoiseModel};
 
 fn main() -> everett::Result<()> {
-    // ── ideal Bell state ───────────────────────────────────────────────────
+    // ideal Bell state
     let bell = prep::bell();
     let ideal = DensityMatrixBackend::run(&bell)?;
     let rho_ideal = ideal.density_matrix();
@@ -17,7 +17,7 @@ fn main() -> everett::Result<()> {
     println!("  P(|11>):     {:.6}", rho_ideal.probability(0b11));
     println!();
 
-    // ── depolarizing noise ─────────────────────────────────────────────────
+    // depolarizing noise
     for &p in &[0.01f64, 0.05, 0.10] {
         let noise = NoiseModel::uniform_depolarizing(p);
         let exec = DensityMatrixBackend::run_with_noise(&bell, &noise)?;
@@ -31,8 +31,8 @@ fn main() -> everett::Result<()> {
     }
     println!();
 
-    // ── amplitude damping (T1 relaxation) ─────────────────────────────────
-    // prepare |1> then damp — expect population to leak back to |0>.
+    // amplitude damping (T1 relaxation)
+    // prepare |1> then damp; expect population to leak back to |0>.
     let mut c = Circuit::new(1);
     c.x(0);
     for &gamma in &[0.0f64, 0.1, 0.5, 0.9] {
@@ -47,7 +47,7 @@ fn main() -> everett::Result<()> {
     }
     println!();
 
-    // ── dephasing (T2): |+> coherence decays ──────────────────────────────
+    // dephasing (T2): |+> coherence decays
     let mut c = Circuit::new(1);
     c.h(0);
     println!("dephasing of |+> state (off-diagonal magnitude):");

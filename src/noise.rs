@@ -35,7 +35,7 @@ pub struct NoiseModel {
     /// Channel applied after every two-qubit gate, to each operand.
     pub after_2q: Option<Channel>,
     /// Probability `p` of a classical bit flip in the measurement outcome.
-    /// The post-measurement state is not flipped — only the recorded bit.
+    /// The post-measurement state is not flipped, only the recorded bit.
     pub readout_error: f64,
 }
 

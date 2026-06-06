@@ -6,7 +6,7 @@ use everett::{Circuit, StabilizerBackend};
 
 fn main() {
     // a 1000-qubit GHZ state. the statevector backend would need 2^1000
-    // amplitudes — more than the number of atoms in the universe. the stabilizer
+    // amplitudes, more than the number of atoms in the universe. the stabilizer
     // backend handles it in O(n^2) bits.
     let n = 1000;
     let mut ghz = Circuit::new(n);

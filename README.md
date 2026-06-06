@@ -3,18 +3,9 @@
 A clean, zero-dependency statevector quantum simulator in Rust.
 
 `everett` represents the quantum state of `n` qubits as a complex vector of
-dimension `2^n` and applies gates in place over amplitude index-groups — never
+dimension `2^n` and applies gates in place over amplitude index-groups, never
 by materializing a `2^n x 2^n` matrix. The name is a nod to the many-worlds
 interpretation: a statevector holds the entire branching wavefunction at once.
-
-## Goals
-
-- **Ergonomic.** A fluent circuit builder backed by a rich, type-safe core.
-- **Self-contained.** Zero runtime dependencies. The complex-number type, the
-  numerical kernel, and the RNG are all hand-rolled.
-- **Correct.** A tiered verification strategy: property tests for the numerics,
-  bounded formal proofs (Kani) for the index arithmetic, and Miri for the
-  `unsafe` kernel.
 
 ## Example
 

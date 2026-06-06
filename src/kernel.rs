@@ -71,7 +71,7 @@ pub(crate) fn index_quad(a: usize, b: usize, i: usize) -> [usize; 4] {
 ///
 /// On `x86_64` with AVX2 + FMA this dispatches to a vectorized path that
 /// processes two amplitude pairs per step; everywhere else (and under Miri) it
-/// uses the scalar path. Both compute the same result — the SIMD path is checked
+/// uses the scalar path. Both compute the same result; the SIMD path is checked
 /// against the scalar one by the kernel-vs-naive property test.
 pub fn apply_1q(amps: &mut [Complex64], k: usize, gate: &Gate1) {
     debug_assert!(amps.len().is_power_of_two());
@@ -344,7 +344,7 @@ fn apply_controlled_1q_scalar(
         // i0 and i1 agree on every bit except target, so testing i0 suffices.
         if i0 & control_mask == control_mask {
             debug_assert!(i0 < n && i1 < n);
-            // SAFETY: identical bounds argument to `apply_1q` — `index_pair`
+            // SAFETY: identical bounds argument to `apply_1q`. `index_pair`
             // gives `i0, i1 < n` for the target qubit, and the pair is read
             // before being written.
             unsafe {
@@ -362,7 +362,7 @@ fn apply_controlled_1q_scalar(
 ///
 /// Preconditions (caller checks): `target >= 1`, `(control_mask & 1) == 0`,
 /// AVX2+FMA available. The bit-0 condition ensures both pairs in each iteration
-/// share the same control outcome — the two i0 values differ only in bit 0,
+/// share the same control outcome: the two i0 values differ only in bit 0,
 /// which is not a control bit, so `i0a & mask == i0b & mask`.
 #[cfg(all(target_arch = "x86_64", not(miri)))]
 #[target_feature(enable = "avx2,fma")]
@@ -383,7 +383,7 @@ unsafe fn apply_controlled_1q_avx2(
     let stride = 1usize << target; // >= 2
     let m = &gate.m;
 
-    // SAFETY (whole body): same repr aliasing as apply_1q_avx2 — `Complex64`
+    // SAFETY (whole body): same repr aliasing as apply_1q_avx2. `Complex64`
     // is `#[repr(C)]` so ptr.add(2*i) addresses amplitude i. the stride loop
     // visits each pair (i0, i1 = i0 + stride) exactly once, both in bounds.
     // reads happen before writes; i0/i1 runs are disjoint. the control test
@@ -438,7 +438,7 @@ unsafe fn apply_controlled_1q_avx2(
 
 /// Bounded formal proofs of the index arithmetic, checked by Kani.
 ///
-/// These establish — for all qubit counts up to a model-checking bound — that
+/// These establish, for all qubit counts up to a model-checking bound, that
 /// the computed indices stay in bounds and are distinct, which is the safety
 /// obligation the `get_unchecked` calls above rely on. Run with `cargo kani`.
 #[cfg(kani)]

@@ -28,20 +28,20 @@ Backend trait  ◀──implements──  StateVectorBackend
   it never runs anything and never fails; validation is a separate, explicit
   step. The fluent `&mut Self` methods (`c.h(0).cnot(0, 1)`) are the primary
   surface.
-- **`Op`** is the instruction set — single-qubit, two-qubit, controlled,
+- **`Op`** is the instruction set: single-qubit, two-qubit, controlled,
   measure, and classical-conditional. Keeping operations as data (rather than as
   direct backend calls) makes a circuit inspectable, reusable across backends,
   and serializable later.
-- **`Backend`** is the seam. It declares four primitives — apply a 1-qubit gate,
-  a 2-qubit gate, a controlled gate, and measure — and a shared `drive` function
+- **`Backend`** is the seam. It declares four primitives (apply a 1-qubit gate,
+  a 2-qubit gate, a controlled gate, and measure), and a shared `drive` function
   layers circuit traversal and classical control on top. A new backend
   implements only those four methods.
-- **`StateVectorBackend`** evolves a dense `State` of `2^n` amplitudes — exact
+- **`StateVectorBackend`** evolves a dense `State` of `2^n` amplitudes: exact
   for any circuit, but exponential in memory.
 - **`StabilizerBackend`** simulates *Clifford* circuits (`H`/`S`/`CNOT`/Pauli) in
   `O(n^2)` via the Aaronson–Gottesman tableau, reaching thousands of qubits;
   non-Clifford gates are rejected with `Error::NonClifford`. It is the payoff of
-  the `Backend` seam — a second backend that reuses `drive` (so measurement and
+  the `Backend` seam: a second backend that reuses `drive` (so measurement and
   classical control come for free) and is cross-validated against the
   statevector backend.
 - **`kernel`** is the statevector numerical core (see
@@ -51,8 +51,8 @@ Backend trait  ◀──implements──  StateVectorBackend
 
 ### Runtime `n`, not const generics
 
-Qubit count is a runtime value. The tempting alternative — `State<const N:
-usize>` backed by `[Complex64; 1 << N]` — requires the `generic_const_exprs`
+Qubit count is a runtime value. The tempting alternative, `State<const N:
+usize>` backed by `[Complex64; 1 << N]`, requires the `generic_const_exprs`
 nightly feature, which has been incomplete and unsound for years. A const marker
 that *doesn't* size the array buys nothing on stable: it can't prevent an
 out-of-range qubit index either. So we spend the type-system budget where it pays
@@ -64,7 +64,7 @@ width chosen at runtime (a width-$k$ QFT), which a const-generic API cannot.
 
 A circuit is a reusable description; a backend is one way to execute it. Keeping
 them apart means a circuit can be validated once, run many times, run on
-different backends, and (later) serialized — none of which is possible if the
+different backends, and (later) serialized, none of which is possible if the
 simulator state lives inside the circuit object.
 
 ### Measurement and classical control are first-class
@@ -109,7 +109,7 @@ paths are pinned equal by a dedicated equivalence test.
 
 CNOT, CZ, and SWAP dispatch to specialized permutation/sign-flip loops in
 `apply_2q` (no complex multiply; ~14–45× over the dense path). `apply_controlled_1q`
-has an AVX2 + FMA fast path — the same 2-lane 2×2 FMA core as `apply_1q_avx2` —
+has an AVX2 + FMA fast path (the same 2-lane 2×2 FMA core as `apply_1q_avx2`),
 active when `target >= 1` and no control qubit occupies bit position 0 (~2.3–13×
 over scalar). Both paths are pinned equal to their scalar references by dedicated
 equivalence tests; Miri exercises the scalar fallbacks.
@@ -132,5 +132,5 @@ name and return `Error::Qasm` on emit. Round-trip is property-tested through the
 statevector backend.
 
 Out of scope for the current release: SIMD for the general dense two-qubit path
-(arbitrary non-CNOT/CZ/SWAP `Gate2` — cross-lane 4×4 reductions for modest gain),
+(arbitrary non-CNOT/CZ/SWAP `Gate2`, with cross-lane 4×4 reductions for modest gain),
 more algorithms (Grover, Deutsch–Jozsa, Simon, Shor), and Python bindings (PyO3).

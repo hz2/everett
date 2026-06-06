@@ -51,7 +51,7 @@ mod tests {
         s1.fidelity(&s2)
     }
 
-    // ── per-op variant tests ──────────────────────────────────────────────
+    // per-op variant tests
 
     #[test]
     fn roundtrip_apply1_named_gates() {
@@ -126,7 +126,7 @@ mod tests {
         assert_eq!(c2.len(), 1);
     }
 
-    // ── algorithm round-trip tests ────────────────────────────────────────
+    // algorithm round-trip tests
 
     #[test]
     fn roundtrip_bell() {
@@ -146,7 +146,7 @@ mod tests {
         assert!(fidelity_after_roundtrip(&c) > 1.0 - 1e-10);
     }
 
-    // ── emitter output tests ──────────────────────────────────────────────
+    // emitter output tests
 
     #[test]
     fn emit_header() {
@@ -182,7 +182,7 @@ mod tests {
         assert!(src.contains("cx q[0], q[1];"));
     }
 
-    // ── parser edge cases ─────────────────────────────────────────────────
+    // parser edge cases
 
     #[test]
     fn parse_both_measure_forms() {

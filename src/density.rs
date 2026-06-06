@@ -186,7 +186,7 @@ impl DensityMatrix {
 
         // apply U† on the right: result = out * U† = (U rho) * U†.
         // equivalently, apply conj(U) to the columns (which are the rows of rho^T).
-        // we transpose out, apply U to rows, then transpose back — or do it directly.
+        // we transpose out, apply U to rows, then transpose back, or do it directly.
         right_multiply_adjoint(&out, &mut self.data, u, targets, self.n);
     }
 

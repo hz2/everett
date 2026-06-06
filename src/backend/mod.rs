@@ -4,7 +4,7 @@
 //! representation. The default backend is [`StateVectorBackend`], which evolves
 //! a dense [`crate::state::State`]. The trait exists so the circuit front end
 //! stays independent of how a circuit is simulated, and so the shared op-walking
-//! logic — including measurement and classical control — is written once.
+//! logic (including measurement and classical control) is written once.
 
 mod density_matrix;
 mod stabilizer;

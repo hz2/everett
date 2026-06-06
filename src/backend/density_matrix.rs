@@ -24,11 +24,11 @@ use crate::rng::Rng;
 /// let mut c = Circuit::new(2);
 /// c.h(0).cnot(0, 1);
 ///
-/// // ideal (noiseless) run — purity should be 1.
+/// // ideal (noiseless) run: purity should be 1.
 /// let exec = DensityMatrixBackend::run(&c)?;
 /// assert!((exec.density_matrix().purity() - 1.0).abs() < 1e-10);
 ///
-/// // 2% depolarizing noise — purity drops below 1.
+/// // 2% depolarizing noise: purity drops below 1.
 /// let noise = NoiseModel::uniform_depolarizing(0.02);
 /// let noisy = DensityMatrixBackend::run_with_noise(&c, &noise)?;
 /// assert!(noisy.density_matrix().purity() < 1.0);
@@ -300,7 +300,7 @@ mod tests {
 
     #[test]
     fn amplitude_damping_decays_excited_state() {
-        // start in |1> (X|0>), apply heavy damping — should be close to |0>.
+        // start in |1> (X|0>), apply heavy damping; should be close to |0>.
         let mut c = Circuit::new(1);
         c.x(0);
         let noise = NoiseModel::amplitude_damping(0.99);

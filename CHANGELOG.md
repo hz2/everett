@@ -39,8 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scalar; that path is rare in real circuits and the cross-lane 4×4 reductions
   would yield modest gain for significant complexity.
 - `StabilizerBackend`: a Clifford-circuit backend using the Aaronson–Gottesman
-  tableau, simulating `H`/`S`/`CNOT`/Pauli circuits and measurement in `O(n^2)`
-  — thousands of qubits, far beyond the statevector backend. Non-Clifford gates
+  tableau, simulating `H`/`S`/`CNOT`/Pauli circuits and measurement in `O(n^2)`:
+  thousands of qubits, far beyond the statevector backend. Non-Clifford gates
   are rejected with `Error::NonClifford`. Cross-validated against the statevector
   backend (the statevector is a `+1` eigenstate of every reported stabilizer
   generator) over random Clifford circuits.

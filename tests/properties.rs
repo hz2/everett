@@ -455,7 +455,7 @@ proptest! {
     }
 }
 
-// ─── G. OpenQASM 3 round-trip ───────────────────────────────────────────────────
+// G. OpenQASM 3 round-trip
 
 // one named-gate op over an n-qubit register. only the gates the emitter can
 // name are generated, since arbitrary matrices have no QASM form.

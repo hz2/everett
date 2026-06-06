@@ -484,7 +484,7 @@ impl<'s> Parser<'s> {
         }
     }
 
-    // parse: measure q[j]; (standalone measure — arrow form)
+    // parse: measure q[j]; (standalone measure, arrow form)
     fn parse_measure_stmt(&mut self) -> Result<Op> {
         self.consume(); // 'measure'
         let qubit = self.parse_qubit_index()?;
@@ -501,7 +501,7 @@ impl<'s> Parser<'s> {
             }
             Tok::Semi => {
                 self.consume();
-                // measure without storing — not representable, skip
+                // measure without storing: not representable, skip
                 Err(Error::Qasm {
                     line: 0,
                     col: 0,
