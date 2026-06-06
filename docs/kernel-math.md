@@ -19,7 +19,7 @@ $|\alpha|^2 + |\beta|^2 = 1$.
 
 ## Single-qubit gates: the bit-insertion loop
 
-A gate $U = \begin{pmatrix} u_{00} & u_{01} \\ u_{10} & u_{11} \end{pmatrix}$ on
+A single-qubit gate $U$ with entries $u_{00}, u_{01}, u_{10}, u_{11}$ on
 qubit $k$ acts independently on each pair of basis states that differ only in
 bit $k$:
 
