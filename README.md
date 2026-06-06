@@ -1,5 +1,8 @@
 # everett
 
+[![CI](https://github.com/hz2/everett/actions/workflows/ci.yml/badge.svg)](https://github.com/hz2/everett/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/hz2/everett/branch/main/graph/badge.svg)](https://codecov.io/gh/hz2/everett)
+
 A clean, zero-dependency statevector quantum simulator in Rust.
 
 `everett` represents the quantum state of `n` qubits as a complex vector of
