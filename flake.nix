@@ -122,11 +122,13 @@
           buildInputs = [
             stableToolchain
             pkgs.python3
-            pkgs.kani
           ];
           shellHook = ''
             echo "everett kani shell"
-            echo "  cargo kani"
+            if ! command -v cargo-kani &> /dev/null; then
+              echo "  install once with: cargo install --locked kani-verifier && cargo kani setup"
+            fi
+            echo "  then: cargo kani"
           '';
         };
 
