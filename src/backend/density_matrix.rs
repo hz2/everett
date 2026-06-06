@@ -169,7 +169,7 @@ impl Backend for DensityMatrixBackend {
     }
 }
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
+// helpers
 
 /// Returns P(qubit = 1) from the diagonal of `rho`.
 fn measure_probability(rho: &DensityMatrix, qubit: usize) -> f64 {

@@ -12,7 +12,7 @@ use approx::assert_abs_diff_eq;
 use everett::{Circuit, Complex64, Gate1, Gate2, State, StateVectorBackend};
 use proptest::prelude::*;
 
-// ─── shared strategies ────────────────────────────────────────────────────────
+// shared strategies
 
 // complex number with components in a bounded range to avoid catastrophic
 // cancellation that would inflate floating-point tolerances.
@@ -59,7 +59,7 @@ fn arb_2q_state() -> impl Strategy<Value = State> {
     })
 }
 
-// ─── A. complex arithmetic ────────────────────────────────────────────────────
+// A. complex arithmetic
 
 proptest! {
     #[test]
@@ -114,7 +114,7 @@ proptest! {
     }
 }
 
-// ─── B. gate unitarity ────────────────────────────────────────────────────────
+// B. gate unitarity
 
 proptest! {
     #[test]
@@ -153,7 +153,7 @@ proptest! {
     }
 }
 
-// ─── C. state normalization under arbitrary gate sequences ───────────────────
+// C. state normalization under arbitrary gate sequences
 
 proptest! {
     // reduced cases because we generate circuits up to n=8 with several gates.
@@ -214,7 +214,7 @@ proptest! {
     }
 }
 
-// ─── D. gate identities applied to states ────────────────────────────────────
+// D. gate identities applied to states
 
 proptest! {
     #[test]
@@ -325,7 +325,7 @@ proptest! {
     }
 }
 
-// ─── E. measurement sanity ────────────────────────────────────────────────────
+// E. measurement sanity
 
 // analytic check: P(|1>) for |+> = 1/2 exactly; no sampling needed.
 #[test]
@@ -388,7 +388,7 @@ proptest! {
     }
 }
 
-// ─── F. kernel vs naive reference ────────────────────────────────────────────
+// F. kernel vs naive reference
 
 // reference implementation of single-qubit gate application that does NOT use
 // the bit-insertion trick: iterates every pair by testing the k-th bit.

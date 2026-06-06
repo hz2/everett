@@ -320,7 +320,7 @@ fn pauli_element(op: char, i: usize, j: usize) -> Complex64 {
     }
 }
 
-// ─── matrix multiply helpers ─────────────────────────────────────────────────
+// matrix multiply helpers
 //
 // These operate on the full 2^n x 2^n density matrix but only mix amplitudes
 // within the qubit subspace the gate acts on, exactly like the statevector
@@ -453,7 +453,7 @@ fn index_group(targets: &[usize], _n: usize, g: usize) -> Vec<usize> {
         .collect()
 }
 
-// ─── Kraus operator ──────────────────────────────────────────────────────────
+// Kraus operator
 
 /// A single Kraus operator: a `2x2` complex matrix acting on one qubit.
 ///

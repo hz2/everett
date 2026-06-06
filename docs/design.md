@@ -14,14 +14,14 @@ choices that shaped it.
 ## The layers
 
 ```
-Circuit  ──describes──▶  Op (instruction set)
-   │                         │
-   │                     drive(): walks ops, owns the classical register
-   ▼                         ▼
-Backend trait  ◀──implements──  StateVectorBackend
-                                    │ dispatches to
-                                    ▼
-                                 kernel  ──mutates──▶  State (Vec<Complex64>)
+Circuit  --describes-->  Op (instruction set)
+   |                         |
+   |                     drive(): walks ops, owns the classical register
+   v                         v
+Backend trait  <--implements--  StateVectorBackend
+                                    | dispatches to
+                                    v
+                                 kernel  --mutates-->  State (Vec<Complex64>)
 ```
 
 - **`Circuit`** is pure data: an ordered `Vec<Op>` plus register sizes. Building
