@@ -41,6 +41,15 @@ pub enum Error {
         /// A human-readable name for the offending gate.
         gate: &'static str,
     },
+    /// A parse or emit error from the `OpenQASM` 3 interface.
+    Qasm {
+        /// Source line (1-indexed; 0 if not applicable).
+        line: usize,
+        /// Source column (1-indexed; 0 if not applicable).
+        col: usize,
+        /// Human-readable description.
+        message: String,
+    },
 }
 
 impl fmt::Display for Error {
@@ -69,6 +78,9 @@ impl fmt::Display for Error {
                     f,
                     "{gate} is not in the Clifford group; the stabilizer backend cannot simulate it"
                 )
+            }
+            Self::Qasm { line, col, message } => {
+                write!(f, "OpenQASM 3 error at {line}:{col}: {message}")
             }
         }
     }

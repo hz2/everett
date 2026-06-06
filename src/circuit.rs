@@ -227,6 +227,13 @@ impl Circuit {
         self
     }
 
+    // --- internal helpers ----------------------------------------------------
+
+    /// Appends an `Op` directly. Used by the QASM parser to reconstruct circuits.
+    pub(crate) fn push_op(&mut self, op: Op) {
+        self.ops.push(op);
+    }
+
     // --- validation ----------------------------------------------------------
 
     /// Checks that every qubit and classical-bit index is in range and that no
@@ -296,6 +303,26 @@ impl Circuit {
                 num_classical: self.num_classical,
             })
         }
+    }
+
+    // --- OpenQASM 3 import/export --------------------------------------------
+
+    /// Emits a valid `OpenQASM` 3.0 string for this circuit.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Qasm`] if any gate has no `OpenQASM` 3 name.
+    pub fn to_qasm(&self) -> Result<String> {
+        crate::qasm::emit(self)
+    }
+
+    /// Parses an `OpenQASM` 3.0 string into a `Circuit`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Qasm`] on any parse error.
+    pub fn from_qasm(src: &str) -> Result<Self> {
+        crate::qasm::parse(src)
     }
 }
 

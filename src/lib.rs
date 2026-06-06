@@ -44,6 +44,7 @@ pub mod kernel;
 mod measure;
 pub mod noise;
 mod op;
+pub mod qasm;
 mod qubit;
 mod rng;
 mod state;

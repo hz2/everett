@@ -121,7 +121,16 @@ depolarizing, amplitude damping (T1), phase damping (T2), bit-flip, dephasing, a
 custom Kraus operators. Ideal runs reproduce statevector backend results exactly.
 Cost is O(4^n) memory and O(4^n) per gate, so practical for n <= 12 or so.
 
+The `qasm` module reads and writes OpenQASM 3.0 over the stdgates.inc named-gate
+subset. `emit` walks `circuit.ops()` and formats each into a statement (angles at
+17 significant digits for exact f64 round-trip); `parse` is a hand-rolled,
+zero-dependency recursive-descent lexer + parser. The parser evaluates `pi`/`tau`
+angle expressions, accepts both `c[i] = measure q[j]` and `measure q[j] -> c[i]`,
+takes any register identifier, and skips gate definitions and statements outside
+the subset (`reset`, `barrier`). Gates built from arbitrary matrices have no QASM
+name and return `Error::Qasm` on emit. Round-trip is property-tested through the
+statevector backend.
+
 Out of scope for the current release: SIMD for the general dense two-qubit path
 (arbitrary non-CNOT/CZ/SWAP `Gate2` — cross-lane 4×4 reductions for modest gain),
-more algorithms (Grover, Deutsch–Jozsa, Simon, Shor), Python bindings (PyO3),
-and OpenQASM 3.0 import/export.
+more algorithms (Grover, Deutsch–Jozsa, Simon, Shor), and Python bindings (PyO3).

@@ -454,3 +454,65 @@ proptest! {
         }
     }
 }
+
+// ─── G. OpenQASM 3 round-trip ───────────────────────────────────────────────────
+
+// one named-gate op over an n-qubit register. only the gates the emitter can
+// name are generated, since arbitrary matrices have no QASM form.
+fn arb_named_op(n: usize) -> impl Strategy<Value = Circuit> {
+    (0usize..n, 0u8..11, arb_angle()).prop_map(move |(q, which, angle)| {
+        let mut c = Circuit::new(n);
+        match which {
+            0 => c.h(q),
+            1 => c.x(q),
+            2 => c.y(q),
+            3 => c.z(q),
+            4 => c.s(q),
+            5 => c.t(q),
+            6 => c.rx(q, angle),
+            7 => c.ry(q, angle),
+            8 => c.rz(q, angle),
+            9 => c.phase(q, angle),
+            _ => c.gate1(Gate1::id(), q),
+        };
+        c
+    })
+}
+
+// a random circuit of named gates on n qubits: a sequence of single-qubit ops
+// plus some two-qubit gates, appended into one circuit.
+fn arb_named_circuit() -> impl Strategy<Value = Circuit> {
+    (2usize..=5)
+        .prop_flat_map(|n| (Just(n), proptest::collection::vec(arb_named_op(n), 1..12)))
+        .prop_map(|(n, parts)| {
+            let mut c = Circuit::new(n);
+            for part in &parts {
+                c.compose(part);
+            }
+            // add a couple of two-qubit gates to exercise Apply2 and Controlled.
+            if n >= 2 {
+                c.cnot(0, 1).cz(0, 1);
+                c.controlled(&[0], Gate1::x(), 1);
+            }
+            c
+        })
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(128))]
+    // emit a random named-gate circuit to QASM, parse it back, and confirm the
+    // two circuits produce the same statevector (fidelity 1).
+    #[test]
+    fn qasm_roundtrip_preserves_state(c in arb_named_circuit()) {
+        let src = c.to_qasm().expect("named-gate circuit must emit");
+        let reparsed = Circuit::from_qasm(&src).expect("emitted QASM must parse");
+
+        let s1 = StateVectorBackend::run(&c).unwrap().into_state();
+        let s2 = StateVectorBackend::run(&reparsed).unwrap().into_state();
+        prop_assert!(
+            s1.fidelity(&s2) > 1.0 - 1e-10,
+            "fidelity {} too low; qasm:\n{src}",
+            s1.fidelity(&s2)
+        );
+    }
+}

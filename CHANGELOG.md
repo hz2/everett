@@ -57,11 +57,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   density matrices with per-gate and readout noise from a `NoiseModel`. Ideal
   runs (no noise) reproduce statevector backend probabilities exactly. Cross-
   validated against `StateVectorBackend` for all circuits up to n=4.
+- OpenQASM 3.0 import/export: `Circuit::to_qasm` emits the stdgates.inc named-gate
+  subset (`h`/`x`/`y`/`z`/`s`/`t`/`id`, `rx`/`ry`/`rz`/`p`, `cx`/`cz`/`swap`,
+  `ctrl @` modifiers, measurement, and single-bit classical control), and
+  `Circuit::from_qasm` parses it back with a hand-rolled, zero-dependency
+  recursive-descent parser. The parser accepts `pi`/`tau` angle expressions, both
+  measurement forms, arbitrary register names, and skips gate definitions and
+  unsupported statements (`reset`, `barrier`). Round-trip is property-tested
+  through the statevector backend (fidelity 1).
 
 ### Planned (future work)
 
 - Python bindings via PyO3 (`pip install everett`): expose `Circuit`, `NoiseModel`,
   and all backends with numpy amplitude arrays. Zero runtime-dep constraint is
   preserved (PyO3 is a build dependency only).
-- OpenQASM 3.0 import/export: interoperability with Qiskit, Cirq, and IBM/Google
-  hardware — circuits designed in any standard toolchain can run on everett.
