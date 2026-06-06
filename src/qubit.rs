@@ -60,3 +60,38 @@ impl fmt::Display for ClassicalBit {
         write!(f, "c{}", self.0)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn qubit_id_index_roundtrips() {
+        assert_eq!(QubitId(3).index(), 3);
+    }
+
+    #[test]
+    fn classical_bit_index_roundtrips() {
+        assert_eq!(ClassicalBit(7).index(), 7);
+    }
+
+    #[test]
+    fn qubit_id_from_usize() {
+        assert_eq!(QubitId::from(2), QubitId(2));
+    }
+
+    #[test]
+    fn classical_bit_from_usize() {
+        assert_eq!(ClassicalBit::from(5), ClassicalBit(5));
+    }
+
+    #[test]
+    fn qubit_id_display() {
+        assert_eq!(format!("{}", QubitId(4)), "q4");
+    }
+
+    #[test]
+    fn classical_bit_display() {
+        assert_eq!(format!("{}", ClassicalBit(2)), "c2");
+    }
+}

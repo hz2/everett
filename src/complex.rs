@@ -245,4 +245,97 @@ mod tests {
             std::mem::align_of::<f64>()
         );
     }
+
+    #[test]
+    fn real_has_zero_imaginary_part() {
+        let z = Complex64::real(3.0);
+        assert_eq!(z, Complex64::new(3.0, 0.0));
+    }
+
+    #[test]
+    fn from_f64_is_real() {
+        let z: Complex64 = 5.0.into();
+        assert_eq!(z, Complex64::real(5.0));
+    }
+
+    #[test]
+    fn from_polar_matches_expi() {
+        let z = Complex64::from_polar(2.0, std::f64::consts::FRAC_PI_2);
+        assert!((z.re).abs() < 1e-15);
+        assert!((z.im - 2.0).abs() < 1e-15);
+    }
+
+    #[test]
+    fn norm_is_sqrt_norm_sqr() {
+        let z = Complex64::new(3.0, 4.0);
+        assert!((z.norm() - 5.0).abs() < 1e-15);
+    }
+
+    #[test]
+    fn arg_of_i_is_half_pi() {
+        assert!((Complex64::I.arg() - std::f64::consts::FRAC_PI_2).abs() < 1e-15);
+    }
+
+    #[test]
+    fn subtraction_is_componentwise() {
+        let a = Complex64::new(5.0, 3.0);
+        let b = Complex64::new(2.0, 1.0);
+        assert_eq!(a - b, Complex64::new(3.0, 2.0));
+    }
+
+    #[test]
+    fn div_by_f64_scales_components() {
+        let z = Complex64::new(4.0, 2.0);
+        assert_eq!(z / 2.0, Complex64::new(2.0, 1.0));
+    }
+
+    #[test]
+    fn neg_flips_both_components() {
+        let z = Complex64::new(1.0, -2.0);
+        assert_eq!(-z, Complex64::new(-1.0, 2.0));
+    }
+
+    #[test]
+    fn add_assign_accumulates() {
+        let mut z = Complex64::new(1.0, 2.0);
+        z += Complex64::new(3.0, 4.0);
+        assert_eq!(z, Complex64::new(4.0, 6.0));
+    }
+
+    #[test]
+    fn sub_assign_decrements() {
+        let mut z = Complex64::new(5.0, 6.0);
+        z -= Complex64::new(1.0, 2.0);
+        assert_eq!(z, Complex64::new(4.0, 4.0));
+    }
+
+    #[test]
+    fn mul_assign_complex_updates_in_place() {
+        let mut z = Complex64::new(1.0, 2.0);
+        z *= Complex64::new(3.0, 4.0);
+        assert_eq!(z, Complex64::new(1.0, 2.0) * Complex64::new(3.0, 4.0));
+    }
+
+    #[test]
+    fn mul_assign_f64_scales_in_place() {
+        let mut z = Complex64::new(2.0, 3.0);
+        z *= 2.0_f64;
+        assert_eq!(z, Complex64::new(4.0, 6.0));
+    }
+
+    #[test]
+    fn display_positive_imaginary() {
+        assert_eq!(format!("{}", Complex64::new(1.0, 2.0)), "1+2i");
+    }
+
+    #[test]
+    fn display_negative_imaginary() {
+        assert_eq!(format!("{}", Complex64::new(1.0, -2.0)), "1-2i");
+    }
+
+    #[test]
+    fn debug_matches_display() {
+        let z = Complex64::new(1.0, 2.0);
+        assert_eq!(format!("{z:?}"), format!("{z}"));
+    }
 }

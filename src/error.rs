@@ -90,3 +90,52 @@ impl std::error::Error for Error {}
 
 /// A `Result` whose error is this crate's [`Error`].
 pub type Result<T> = std::result::Result<T, Error>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::qubit::{ClassicalBit, QubitId};
+
+    #[test]
+    fn qubit_out_of_range_message() {
+        let e = Error::QubitOutOfRange { qubit: QubitId(3), num_qubits: 2 };
+        assert_eq!(e.to_string(), "qubit q3 out of range for 2-qubit register");
+    }
+
+    #[test]
+    fn classical_bit_out_of_range_message() {
+        let e = Error::ClassicalBitOutOfRange { bit: ClassicalBit(5), num_classical: 3 };
+        assert_eq!(e.to_string(), "classical bit c5 out of range for 3-bit register");
+    }
+
+    #[test]
+    fn duplicate_qubit_message() {
+        let e = Error::DuplicateQubit { qubit: QubitId(1) };
+        assert_eq!(e.to_string(), "qubit q1 used more than once in a single gate");
+    }
+
+    #[test]
+    fn dimension_mismatch_message() {
+        let e = Error::DimensionMismatch { len: 3, expected: 4 };
+        assert_eq!(e.to_string(), "amplitude buffer has length 3, expected 4");
+    }
+
+    #[test]
+    fn non_clifford_message() {
+        let e = Error::NonClifford { gate: "T" };
+        assert!(e.to_string().contains("T"));
+        assert!(e.to_string().contains("Clifford"));
+    }
+
+    #[test]
+    fn qasm_error_message() {
+        let e = Error::Qasm { line: 5, col: 10, message: "unexpected token".into() };
+        assert_eq!(e.to_string(), "OpenQASM 3 error at 5:10: unexpected token");
+    }
+
+    #[test]
+    fn error_implements_std_error() {
+        let e: &dyn std::error::Error = &Error::NonClifford { gate: "Toffoli" };
+        assert!(e.source().is_none());
+    }
+}
