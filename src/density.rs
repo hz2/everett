@@ -458,7 +458,7 @@ fn index_group(targets: &[usize], _n: usize, g: usize) -> Vec<usize> {
 /// A single Kraus operator: a `2x2` complex matrix acting on one qubit.
 ///
 /// Noise channels are collections of these; physically valid channels satisfy
-/// `sum_k K_k† K_k = I`, which the noise constructors in [`NoiseModel`] uphold.
+/// `sum_k K_k† K_k = I`, which the noise constructors in [`crate::NoiseModel`] uphold.
 #[derive(Clone, Debug)]
 pub struct KrausOp(pub [Complex64; 4]);
 

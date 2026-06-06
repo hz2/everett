@@ -22,8 +22,12 @@ fn main() -> everett::Result<()> {
         let noise = NoiseModel::uniform_depolarizing(p);
         let exec = DensityMatrixBackend::run_with_noise(&bell, &noise)?;
         let rho = exec.density_matrix();
-        println!("depolarizing p={p:.2}: purity={:.4}  P(00)={:.4}  P(11)={:.4}",
-            rho.purity(), rho.probability(0b00), rho.probability(0b11));
+        println!(
+            "depolarizing p={p:.2}: purity={:.4}  P(00)={:.4}  P(11)={:.4}",
+            rho.purity(),
+            rho.probability(0b00),
+            rho.probability(0b11)
+        );
     }
     println!();
 
@@ -35,8 +39,11 @@ fn main() -> everett::Result<()> {
         let noise = NoiseModel::amplitude_damping(gamma);
         let exec = DensityMatrixBackend::run_with_noise(&c, &noise)?;
         let rho = exec.density_matrix();
-        println!("amplitude damping gamma={gamma:.1}: P(|0>)={:.4}  P(|1>)={:.4}",
-            rho.probability(0), rho.probability(1));
+        println!(
+            "amplitude damping gamma={gamma:.1}: P(|0>)={:.4}  P(|1>)={:.4}",
+            rho.probability(0),
+            rho.probability(1)
+        );
     }
     println!();
 
@@ -48,8 +55,11 @@ fn main() -> everett::Result<()> {
         let noise = NoiseModel::dephasing(p);
         let exec = DensityMatrixBackend::run_with_noise(&c, &noise)?;
         let rho = exec.density_matrix();
-        println!("  p={p:.1}: |rho_01|={:.4}  <X>={:.4}",
-            rho.get(0, 1).norm(), rho.expectation_pauli(0, 'X'));
+        println!(
+            "  p={p:.1}: |rho_01|={:.4}  <X>={:.4}",
+            rho.get(0, 1).norm(),
+            rho.expectation_pauli(0, 'X')
+        );
     }
 
     Ok(())
