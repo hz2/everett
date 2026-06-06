@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/hz2/everett/actions/workflows/ci.yml/badge.svg)](https://github.com/hz2/everett/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/hz2/everett/branch/main/graph/badge.svg)](https://codecov.io/gh/hz2/everett)
+[![docs.rs](https://docs.rs/everett/badge.svg)](https://docs.rs/everett)
 
 A clean, zero-dependency statevector quantum simulator in Rust.
 
